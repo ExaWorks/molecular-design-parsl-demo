@@ -1,0 +1,27 @@
+name: moldesign-demo
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+# Core dependencies
+  - python==3.9.*
+  - jupyterlab
+  - pytest
+  - flake8
+  - pip
+
+# Dependencies from the molecular design app
+  - scikit-learn==0.23.*
+  - matplotlib==3.3.3
+  - geometric==0.9.*
+  - qcengine==0.19.*
+  - rdkit==2021.09.01
+  - py-cpuinfo<6
+  - msgpack-python==1.*
+  - xtb-python
+  - psutil
+  - tqdm
+
+# Pip packages fro things not on Theta
+  - pip:
+      - parsl>=1.*
