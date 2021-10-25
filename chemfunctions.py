@@ -8,7 +8,8 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from typing import Tuple
 
-from rdkit import Chem
+import numpy as np
+from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from qcelemental.models import OptimizationInput, Molecule, AtomicInput
 from qcengine.compute import compute_procedure, compute

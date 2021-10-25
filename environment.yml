@@ -6,6 +6,7 @@ dependencies:
 # Core dependencies
   - python==3.9.*
   - jupyterlab
+  - ipywidgets
   - pytest
   - flake8
   - pip
@@ -24,4 +25,5 @@ dependencies:
 
 # Pip packages fro things not on Theta
   - pip:
+      - -e .
       - parsl>=1.*
