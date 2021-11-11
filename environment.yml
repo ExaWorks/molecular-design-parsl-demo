@@ -7,8 +7,6 @@ dependencies:
   - python==3.9.*
   - jupyterlab
   - ipywidgets
-  - pytest
-  - flake8
   - pip
 
 # Dependencies from the molecular design app
@@ -23,7 +21,7 @@ dependencies:
   - psutil
   - tqdm
 
-# Pip packages fro things not on Theta
+# Pip install Parsl and the local functions
   - pip:
       - -e .
       - parsl>=1.*
