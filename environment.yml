@@ -18,6 +18,7 @@ dependencies:
   - py-cpuinfo<6
   - msgpack-python==1.*
   - xtb-python
+  - redis
   - psutil
   - tqdm
 
@@ -25,3 +26,4 @@ dependencies:
   - pip:
       - -e .
       - parsl>=1.*
+      - colmena>=0.3.1

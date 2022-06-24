@@ -5,15 +5,19 @@ we define them here to keep the notebook cleaner
 """
 
 from concurrent.futures import ProcessPoolExecutor
-from functools import partial
-from typing import Tuple
+from functools import partial, update_wrapper
+from typing import Tuple, List
 
 import numpy as np
+import pandas as pd
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from qcelemental.models import OptimizationInput, Molecule, AtomicInput
 from qcengine.compute import compute_procedure, compute
 from sklearn.base import TransformerMixin, BaseEstimator
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.pipeline import Pipeline
+
 
 
 """SIMULATION FUNCTIONS: Quantum chemistry parts of the workflow"""
@@ -101,6 +105,8 @@ def _compute_vertical(smiles: str) -> float:
 
 # Make versions that execute in separate processes
 compute_vertical = partial(_run_in_process, _compute_vertical)
+compute_vertical = update_wrapper(compute_vertical, _compute_vertical)
+compute_vertical.__name__ = 'compute_vertical'
 
 
 """MACHINE LEARNING FUNCTIONS: Predicting the output of quantum chemistry"""
@@ -153,6 +159,38 @@ class MorganFingerprintTransformer(BaseEstimator, TransformerMixin):
         
         fing = [compute_morgan_fingerprints(m, self.length, self.radius) for m in X]
         return np.vstack(fing)
+
+
+def train_model(smiles: List[str], properties: List[float]):
+    """Train a machine learning model using Morgan Fingerprints.
+    
+    Args:
+        smiles: SMILES strings for each molecule
+        properties: List of a property for each molecule
+    Returns:
+        A trained model
+    """
+    # Imports for python functions run remotely must be defined inside the function
+    
+    model = Pipeline([
+        ('fingerprint', MorganFingerprintTransformer()),
+        ('knn', KNeighborsRegressor(n_neighbors=4, weights='distance', metric='jaccard', n_jobs=-1))  # n_jobs = -1 lets the model run all available processors
+    ])
+    
+    return model.fit(smiles, properties)
+
+
+def run_model(model, smiles):
+    """Run a model on a list of smiles strings
+    
+    Args:
+        model: Trained model that takes SMILES strings as inputs
+        smiles: List of molecules to evaluate
+    Returns:
+        A dataframe with the molecules and their predicted outputs
+    """
+    pred_y = model.predict(smiles)
+    return pd.DataFrame({'smiles': smiles, 'ie': pred_y})
 
     
 if __name__ == "__main__":
