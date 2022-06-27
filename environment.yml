@@ -26,4 +26,4 @@ dependencies:
   - pip:
       - -e .
       - parsl>=1.*
-      - colmena>=0.3.1
+      - colmena>=0.3.2
