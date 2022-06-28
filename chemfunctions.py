@@ -3,7 +3,7 @@
 While Parsl does offer the ability to run functions defined in a Jupyter notebook,
 we define them here to keep the notebook cleaner   
 """
-
+import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, update_wrapper
 from typing import Tuple, List
@@ -18,8 +18,6 @@ from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
 
-
-
 """SIMULATION FUNCTIONS: Quantum chemistry parts of the workflow"""
 
 _spec = {
@@ -29,6 +27,7 @@ _spec = {
     },
     'keywords': {'accuracy': 0.05}
 }
+
 
 def generate_initial_xyz(mol_string: str) -> str:
     """Generate the XYZ coordinates for a molecule.
@@ -73,7 +72,7 @@ def _run_in_process(func, *args):
         print(args)
         fut = exe.submit(func, *args)
         return fut.result()
-    
+
 
 def _compute_vertical(smiles: str) -> float:
     """Run the ionization potential computation
@@ -94,12 +93,12 @@ def _compute_vertical(smiles: str) -> float:
                                   initial_molecule=mol,
                                   keywords={"program": "xtb"})
     opt_res = compute_procedure(opt_input, "geometric", raise_error=True)
-    
+
     # Compute the energy of the relaxed geometry in charged form
     charged_mol = Molecule.from_data(opt_res.final_molecule.to_string('xyz'), molecular_charge=1)
     input_spec = AtomicInput(molecule=charged_mol, driver='energy', **_spec)
     charged_res = compute(input_spec, 'xtb', raise_error=True)
-                                            
+
     return charged_res.return_result - opt_res.energies[-1]
 
 
@@ -107,7 +106,6 @@ def _compute_vertical(smiles: str) -> float:
 compute_vertical = partial(_run_in_process, _compute_vertical)
 compute_vertical = update_wrapper(compute_vertical, _compute_vertical)
 compute_vertical.__name__ = 'compute_vertical'
-
 
 """MACHINE LEARNING FUNCTIONS: Predicting the output of quantum chemistry"""
 
@@ -137,17 +135,16 @@ def compute_morgan_fingerprints(smiles: str, fingerprint_length: int, fingerprin
     return arr
 
 
-
 class MorganFingerprintTransformer(BaseEstimator, TransformerMixin):
     """Class that converts SMILES strings to fingerprint vectors"""
-    
+
     def __init__(self, length: int = 256, radius: int = 4):
         self.length = length
         self.radius = radius
-    
+
     def fit(self, X, y=None):
         return self  # Do need to do anything
-    
+
     def transform(self, X, y=None):
         """Compute the fingerprints
         
@@ -156,8 +153,13 @@ class MorganFingerprintTransformer(BaseEstimator, TransformerMixin):
         Returns:
             Array of fingerprints
         """
-        
-        fing = [compute_morgan_fingerprints(m, self.length, self.radius) for m in X]
+
+        my_func = partial(compute_morgan_fingerprints,
+                          fingerprint_length=self.length,
+                          fingerprint_radius=self.radius)
+        n_workers = len(os.sched_getaffinity(0)) - 1  # Get as many threads as we are assigned to
+        with ProcessPoolExecutor(max_workers=n_workers) as pool:
+            fing = pool.map(my_func, X, chunksize=2048)
         return np.vstack(fing)
 
 
@@ -171,12 +173,13 @@ def train_model(smiles: List[str], properties: List[float]):
         A trained model
     """
     # Imports for python functions run remotely must be defined inside the function
-    
+
     model = Pipeline([
         ('fingerprint', MorganFingerprintTransformer()),
-        ('knn', KNeighborsRegressor(n_neighbors=4, weights='distance', metric='jaccard', n_jobs=-1))  # n_jobs = -1 lets the model run all available processors
+        ('knn', KNeighborsRegressor(n_neighbors=4, weights='distance', metric='jaccard', n_jobs=-1))
+        # n_jobs = -1 lets the model run all available processors
     ])
-    
+
     return model.fit(smiles, properties)
 
 
@@ -192,7 +195,6 @@ def run_model(model, smiles):
     pred_y = model.predict(smiles)
     return pd.DataFrame({'smiles': smiles, 'ie': pred_y})
 
-    
+
 if __name__ == "__main__":
     energy = compute_vertical('OC')
-    
