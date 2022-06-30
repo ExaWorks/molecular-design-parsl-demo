@@ -26,4 +26,5 @@ dependencies:
   - pip:
       - -e .
       - parsl>=1.*
+      - jupyterlab-spellchecker
       - colmena>=0.3.2
