@@ -136,9 +136,8 @@ class BatchedThinker(BaseThinker):
             self.allocation[task_type] += change
 
             # Exit if the code was updated not recently
-            if perf_counter() - self.last_updated < 0.01:
+            if perf_counter() - self.last_updated < 0.1:
                 return
-            self.last_updated = perf_counter()
 
             # Get the color for each allocation
             #  Store them in a dictionary that will be used for
@@ -168,6 +167,7 @@ class BatchedThinker(BaseThinker):
             html = self.template.substitute(sub_dict)
             self.dashboard.outputs = []
             self.dashboard.append_display_data(display.HTML(html))
+            self.last_updated = perf_counter()
 
     @task_submitter(task_type='simulate', n_slots=1)
     def submit_calc(self):
