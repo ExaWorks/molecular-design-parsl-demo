@@ -1,0 +1,57 @@
+<html>
+    <head>
+        
+    <style>
+    th, td {
+      text-align: center;
+      vertical-align: middle;
+    }
+    </style>
+    </head>
+    <body>
+    <div class="container">
+        <h3 style='align: center'>Utilization</h3>
+        <table class='table' style="width:100%">
+            <thead><tr>
+                <th>Simulation</th>
+                <th>Training</th>
+                <th>Inference</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td style="background-color:$sim_color">$sim_count</td>
+                    <td style="background-color:$tri_color">$tri_count</td>
+                    <td style="background-color:$inf_color">$inf_count</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3 style='align: center'>Molecules</h3>
+        <table class='table' style='text-align: center;'>
+            <thead><tr>
+                <th>Best</th>
+                <th>Recent</th>
+                <th></th>
+                <th></th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td style="border: 4px solid;">$best_mol</td>
+                    <td>$recent_mol_0</td>
+                    <td>$recent_mol_1</td>
+                    <td>$recent_mol_2</td>
+                    <td>$recent_mol_3</td>
+                    <td>$recent_mol_4</td>
+                    <td>$recent_mol_5</td>
+                    <td>$recent_mol_6</td>
+                    <td>$recent_mol_7</td>
+                    <td>$recent_mol_8</td>
+                    <td>$recent_mol_9</td>
+                    <td>$recent_mol_10</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+    </body>
+</html>
