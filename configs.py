@@ -1,4 +1,8 @@
-"""Configuration used to demonstrate running Parsl on ALCF's Theta supercomputer.
+"""Configuration used to demonstrate running Parsl on ALCF's Theta supercomputer
+connecting from your local system.
+
+WARNING: You should probably use FuncX if you are looking for remote access,
+or launch your application from the Theta login node if you want to use Parsl.
 
 Before running, you must open ports on the remote system or provide an SSH tunnel.
 ALCF prefers SSH tunnels, which we open using
