@@ -1,6 +1,7 @@
 <html>
     <head>
-        
+
+    <!-- These don't work in Jupyter, and I'm not sure why. -->
     <style>
     th, td {
       text-align: center;
@@ -10,6 +11,7 @@
     </head>
     <body>
     <div class="container">
+        <!-- Show what's currently running -->
         <h3 style='align: center'>Utilization</h3>
         <table class='table' style="width:100%">
             <thead><tr>
@@ -25,7 +27,8 @@
                 </tr>
             </tbody>
         </table>
-        
+
+        <!-- Rolling list of the best molecules -->
         <h3 style='align: center'>Molecules</h3>
         <table class='table' style='text-align: center;'>
             <thead><tr>
@@ -48,6 +51,24 @@
                     <td>$recent_mol_8</td>
                     <td>$recent_mol_9</td>
                     <td>$recent_mol_10</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- A measure of the science problem being solved -->
+        <h3>Solution Quality</h3>
+
+        <table class='table' style="width:100%">
+            <thead><tr>
+                <th>Number Evaluated</th>
+                <th>Top Molecules Found</th>
+                <th>Top Found Recently</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td>$total_eval</td>
+                    <td>$total_success</td>
+                    <td>$recent_success</td>
                 </tr>
             </tbody>
         </table>
