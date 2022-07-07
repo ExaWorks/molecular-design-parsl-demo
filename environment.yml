@@ -25,6 +25,8 @@ dependencies:
 # Pip install Parsl and the local functions
   - pip:
       - -e .
-      - parsl>=1.*
+      - parsl==1.1.0  # pinned to fX's supported version
+      - funcx_endpoint
+      - foundry_ml
       - jupyterlab-spellchecker
       - colmena>=0.3.2
