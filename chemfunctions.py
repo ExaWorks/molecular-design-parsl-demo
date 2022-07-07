@@ -6,7 +6,7 @@ we define them here to keep the notebook cleaner
 import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, update_wrapper
-from typing import Tuple, List
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,14 @@ from qcengine.compute import compute_procedure, compute
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
+
+
+# Make a global pool for this particular Python thread
+#  Not a great practice, as it will not exit until Python does.
+#  Useful on HPC as it limits the number of times we call `fork`
+#   and we know the nodes where this run will get purged after tasks complete
+n_workers = len(os.sched_getaffinity(0)) - 1  # Get as many threads as we are assigned to
+_pool = ProcessPoolExecutor(max_workers=n_workers)
 
 """SIMULATION FUNCTIONS: Quantum chemistry parts of the workflow"""
 
@@ -157,9 +165,7 @@ class MorganFingerprintTransformer(BaseEstimator, TransformerMixin):
         my_func = partial(compute_morgan_fingerprints,
                           fingerprint_length=self.length,
                           fingerprint_radius=self.radius)
-        n_workers = len(os.sched_getaffinity(0)) - 1  # Get as many threads as we are assigned to
-        with ProcessPoolExecutor(max_workers=n_workers) as pool:
-            fing = pool.map(my_func, X, chunksize=2048)
+        fing = _pool.map(my_func, X, chunksize=2048)
         return np.vstack(fing)
 
 
