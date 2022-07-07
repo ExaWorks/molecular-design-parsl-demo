@@ -91,10 +91,14 @@ class BatchedThinker(BaseThinker):
             while not self.done.is_set():
                 self._update_dashboard('simulate', 0)
                 sleep(1)
+
         Thread(target=_update_loop, daemon=True).start()
 
         # Settings that are not user-configurable yet
-        self.inference_tasks = n_parallel * 2  # Number of inference tasks
+        self.inference_tasks = max(
+            len(molecule_list) // 20000,
+            self.batch_size * 2
+        )  # Ensure task sizes are large enough to be interesting
 
         # Create a database of evaluated molecules
         self.database = dict()
@@ -135,8 +139,8 @@ class BatchedThinker(BaseThinker):
             # Update the allocation record
             self.allocation[task_type] += change
 
-            # Exit if the code was updated not recently
-            if perf_counter() - self.last_updated < 0.1:
+            # Exit if the HTML was updated recently
+            if perf_counter() - self.last_updated < 1:
                 return
 
             # Get the color for each allocation
@@ -163,11 +167,29 @@ class BatchedThinker(BaseThinker):
             for i, r in enumerate(reversed(self.simulation_results[-10:])):
                 sub_dict[f'recent_mol_{i}'] = _print_molecule(r.args[0])
 
+            # Compute the success rates
+            if len(self.simulation_results) > 0:
+                success_thr = 0.55
+                most_recent = min(
+                    max(25, self.batch_size * 2),
+                    len(self.simulation_results)
+                )
+                sub_dict['total_eval'] = str(len(self.simulation_results))
+                success_count = sum(x.success and x.value > success_thr for x in self.simulation_results)
+                total_count = len(self.simulation_results)
+                sub_dict['total_success'] = f'{success_count} ({success_count / total_count * 100:.0f} %)'
+                success_count = sum(x.success and x.value > success_thr for x in self.simulation_results[-most_recent:])
+                sub_dict['recent_success'] = f'{success_count} ({success_count / most_recent * 100:.0f} %)'
+
             # Render the template
             html = self.template.substitute(sub_dict)
             self.dashboard.outputs = []
             self.dashboard.append_display_data(display.HTML(html))
             self.last_updated = perf_counter()
+
+            # Save it to disk too
+            with open('monitor-renderer.html', 'w') as fp:
+                print(html, file=fp)
 
     @task_submitter(task_type='simulate', n_slots=1)
     def submit_calc(self):
@@ -276,4 +298,4 @@ class BatchedThinker(BaseThinker):
 
         # Mark that we can resume simulations
         self.task_list_ready.set()
-        print(f'Inference done. Elapsed time: {perf_counter() - start_time:.2f}s')
+        print(f'Inference done. Elapsed time: {perf_counter() - start_time:.2f}s', end='\n')
