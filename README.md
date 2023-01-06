@@ -1,4 +1,6 @@
 # ML-in-the-loop molecular design with Parsl
+.. image:: https://mybinder.org/badge.svg
+ :target: https://mybinder.org/v2/gh/Parsl/parsl-tutorial/master
 
 This repository contains a tutorial showing how Parsl can be used to write a machine-learning-guided search for high-performing molecules.
 
