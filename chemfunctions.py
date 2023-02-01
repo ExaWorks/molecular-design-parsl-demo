@@ -23,7 +23,7 @@ from sklearn.pipeline import Pipeline
 #  Not a great practice, as it will not exit until Python does.
 #  Useful on HPC as it limits the number of times we call `fork`
 #   and we know the nodes where this run will get purged after tasks complete
-n_workers = len(os.sched_getaffinity(0)) - 1  # Get as many threads as we are assigned to
+n_workers = max(len(os.sched_getaffinity(0)) - 1, 1)  # Get as many threads as we are assigned to
 _pool = ProcessPoolExecutor(max_workers=n_workers)
 
 """SIMULATION FUNCTIONS: Quantum chemistry parts of the workflow"""
