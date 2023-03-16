@@ -7,13 +7,15 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial, update_wrapper
 from typing import List
+from io import StringIO
 
 import numpy as np
 import pandas as pd
+from ase.io import read
+from ase.optimize import LBFGSLineSearch
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
-from qcelemental.models import OptimizationInput, Molecule, AtomicInput
-from qcengine.compute import compute_procedure, compute
+from xtb.ase.calculator import XTB
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
@@ -27,16 +29,6 @@ n_workers = max(len(os.sched_getaffinity(0)) - 1, 1)  # Get as many threads as w
 _pool = ProcessPoolExecutor(max_workers=n_workers)
 
 """SIMULATION FUNCTIONS: Quantum chemistry parts of the workflow"""
-
-_spec = {
-    'model': {
-        'method': 'GFN2-xTB',
-        'basis': None
-    },
-    'keywords': {'accuracy': 0.05}
-}
-
-
 def generate_initial_xyz(mol_string: str) -> str:
     """Generate the XYZ coordinates for a molecule.
     
@@ -93,21 +85,27 @@ def _compute_vertical(smiles: str) -> float:
 
     # Make the initial geometry
     xyz = generate_initial_xyz(smiles)
+    
+    # Make the XTB calculator
+    calc = XTB(accuracy=0.05)
+    
+    # Parse the molecule
+    atoms = read(StringIO(xyz), format='xyz')
 
     # Compute the neutral geometry
     #  Uses QCEngine (https://github.com/MolSSI/QCEngine) to handle interfaces to XTB
-    mol = Molecule.from_data(xyz)
-    opt_input = OptimizationInput(input_specification=_spec,
-                                  initial_molecule=mol,
-                                  keywords={"program": "xtb"})
-    opt_res = compute_procedure(opt_input, "geometric", raise_error=True)
+    atoms.calc = calc
+    dyn = LBFGSLineSearch(atoms, logfile=None)
+    dyn.run(fmax=0.02, steps=250)
+    
+    neutral_energy = atoms.get_potential_energy()
 
     # Compute the energy of the relaxed geometry in charged form
-    charged_mol = Molecule.from_data(opt_res.final_molecule.to_string('xyz'), molecular_charge=1)
-    input_spec = AtomicInput(molecule=charged_mol, driver='energy', **_spec)
-    charged_res = compute(input_spec, 'xtb', raise_error=True)
-
-    return charged_res.return_result - opt_res.energies[-1]
+    charges = np.ones((len(atoms),)) * (1 / len(atoms))
+    atoms.set_initial_charges(charges)
+    charged_energy = atoms.get_potential_energy()
+    
+    return charged_energy - neutral_energy
 
 
 # Make versions that execute in separate processes
@@ -204,3 +202,4 @@ def run_model(model, smiles):
 
 if __name__ == "__main__":
     energy = compute_vertical('OC')
+    print(energy)
